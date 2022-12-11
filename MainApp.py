@@ -67,10 +67,7 @@ def ui1():
             Select the number that applies:
                 1. There are files in the directory ending in .error or .parse.
                 2. There are files in the directory ending in .failedpdf or .cxpdf.
-                3. There are no files in the directory, but there is an archive folder.
-                    - This usually means that AXRM is processing the files since AXRM allows the files to be archived.
-                    - (could be named something other than archive)
-                4. There are no files in the directory.
+                3. There are no files in the directory.
                 0. Exit application
             """))
             if user_input1 == 1:
@@ -84,7 +81,7 @@ def ui1():
                           to CWx as they will need to see what's blocking the files from coming through. 
                     - Every 1 - 5 minutes, batch prep will check the directory to see if there are files to process.
                     - When batch prep detects the file, it will start to process the file according the the settings.
-                        * There is more information regarding the advanced settings below.  
+                        * There is more information regarding the advanced settings for batch prep below.  
                     - Once batch prep processes the document, it will send the file to the batch indexing service to
                       be processed into Millennium. 
                 
@@ -102,7 +99,7 @@ def ui1():
                           - In this example, filename should be:
                             - batchclass_batchname_createdate_createtime_mrn_FIN_docalias_provider_trackingnbr
                     
-                    - There is a here is a known defect inside the advanced settings for batch prep:
+                    - There is a known defect inside the advanced settings for batch prep:
                         – When trying to update a setting inside the advanced settings box, a message stating: 
                             "Check the required fields" pops up; this is a defect. The jira is below.
                         -https://jira2.cerner.com/browse/DOCIMAGING-13599
@@ -118,8 +115,8 @@ def ui1():
                             * Open CDIConfig
                             * Go to the services tab 
                             * Select the batch prep service 
-                            * Open up the advanced settings and the directory containing the files so that you can compare
-                                the filename format in the advance setting vs. what is actually being sent in by the client.
+                            * Open up the advanced settings and the directory containing the files so that you can 
+                                compare the filename format in the advance setting vs. what is actually being sent in.
                 """)
                 ui2()
                 break
@@ -128,29 +125,33 @@ def ui1():
                 This means the document were processed by AXRM.
                 
                 Before starting to troubleshoot, lets go through the process the cold feed documents follow:
-                    - The client or a third party sends the documents to the fileshare directory.
+                    - The client or a third party sends the documents to the fileshare directory, same as batch prep.
                     - AXRM will process the document and send the document to the upload application.
                         * The upload app is listed in the report type properties setting. 
                         * The upload app will usually be ermx_auto or cdi_auto
                     - When the documents land in the auto queue, the batch indexing service will process the documents.
-                        * If successful, the image was attached to the patient's chart. 
+                        * If successful, the image is attached to the patient's chart. 
                             - To verify, you can go to the patient's chart in PowerChart and look for the image.
                             - Or, you can search for the batch using the trans log or pending document table.
                         * If the document failed, there was an issue attaching the document to the patient's chart.
-                            - The document will be sent to cer_batchindex.
+                            - This could be due to MRN or FIN don't match a patient, the date of service is not in the 
+                              correct date range, duplicate documents, etc.
+                            - The document will be sent to cer_batchindex waiting for a user to correct the error.
                 
                 Tips:    
                     - If the documents are ending in .FAILEDPDF: 
                         * AXRM failed the documents.
                         * We will have to start at the beginning of the cold feed process mentioned above, which is:
                             - Documents being process in the fileshare directory by AXRM.
+                            - Inside AXRM, there should be logs that will tell you what happened.
                     - If the documents are ending in .CXPDF:
                         * AXRM processed the documents successfully. 
                         * We can move on to the next step of the cold feed process, which is:
                             - The documents being sent to the upload app (AUTO queue).        
                     - Each report type has it's own script that it uses to read the file names, and its own logs.
-                        * You can usually find these scripts and logs in 
-                            - C:'\'ERMXData'\'Scripts and C:'\'ERMXData'\'RPWorking, respectively.
+                        * You can usually find these scripts and logs in (fyi: the directories backslash from the 
+                          directories location because of the python code and the way it reads backslashes)
+                            - C:-ERMXData-Scripts and C:-ERMXData-RPWorking, respectively.
                     - ERMX can only process one directory at a time. If there are documents in different directories, 
                       ERMX will process one directory until all the files have been processed, 
                       before moving on to the next directory.
@@ -185,7 +186,7 @@ def ui1():
 def ui2():
     while True:
         user_input2 = input("""
-        Does the filename values for the .error pdf match the Batch Prep filename settings in CDIConfig? 
+        Do the values in the filename for the .error pdf match the Batch Prep filename settings in CDIConfig? 
         y/n or e to exit
         
         """)
@@ -202,7 +203,8 @@ def ui2():
                         - Hit the start menu 
                         - Search for 'msgviewwin' and open up the application.
                         - When open, hit file -> load private file -> select cdi.mlg file.
-                        - When the file has been reprocessed, hit refresh in 'msgviewwin'
+                        - When the failed batch prep file has been reprocessed, if you don't see the error in the 
+                          cdi.mlg file, hit refresh in 'msgviewwin' to pull in the recently thrown logs.
                             * You should see the error message in cdi.mlg file.
                     * The error messages for Batch Prep are pretty self-explanatory. Below I listed some of the error
                       messages that I've seen. 
@@ -212,13 +214,18 @@ def ui2():
                     - https://dragondrop.cerner.com/615853-millennium-cerner-document-imaging-cdiconfig-access-denied-2
                 - Access Denied
                     - Check the PDF's security settings. 
-                    - The settings could be preventing the prep service to process the document.
+                        * The settings could be preventing the prep service to process the document.
+                    - Check batch prep's account in the 'services' and CDIConfig apps.
+                        * In CDIConfig, batch prep usually runs with the cerner, or another admin account.
+                        * In 'services,' batch prep usually runs with the cernerasp <client mnemonic>cpdisvc account
                 - Wrong file format
                     - For example, I had a ticket where they sent word documents instead of PDFs. 
                     - Batch Prep can't process word documents.
-                - The batch preparation service failed to lock file '<some file name>_Endo_Cart\dmag.xml'
+                    - I can only process file extensions that end in three letters, such as:
+                        * pdf, txt, xml
+                - The batch preparation service failed to lock file such as '<some file name>_Endo_Cart\dmag.xml'
                     - SR 447015418
-                        - Two folders were processed, and someone resent the same folders, causing the issue. 
+                        - Two folders were already processed, but someone resent the same folders, causing the issue. 
                         - When batch prep tried to process the duplicate folders, it couldn't rename the folder to 
                             .done since it already existed. 
                         - I removed the duplicate folders, and the other batches started processing.
@@ -245,17 +252,29 @@ def ui3():
             Select the number that applies:
                 1 - .CXPDF
                 2 - .FAILEDPDF
+                3 - No files
                 0 - Exit application
             """))
             if user_input3 == 1:
                 print("""
-                .CXPDF means that the files were processed successfully. 
-                    - The isn't with ApplicationXtender, and we can move on to the next step. 
+                .CXPDF means that the files were processed successfully by AXRM. 
+                    - The issue isn't with ApplicationXtender, and we can move on to the next step in the cold feed 
+                      process. 
                     
                 Next Step:
-                    - The files will be sent to the ERMX_AUTO, CDI_AUTO, or CEROTG queue. 
+                    - The files will be sent to the ERMX_AUTO, CDI_AUTO, or CEROTG queue, depending on the domain setup. 
                         * If the client's domain is single app architecture (CEROTG) 
+                            - Single App Architecture means that instead sending files to different queues (ERMX_AUTO, 
+                              ERMX_MAN, CDI_AUTO, CDI_MAN, etc.), the files are sent to one application, or queue
+                              (CEROTG), where it will be processed. 
+                                * Everything happens in this one app (or queue) in order to minimize the amount of 
+                                  moving parts that the documents go through and to create a single point of error, 
+                                  instead of having to search through multiple applications to find where the error took
+                                  place.  
                         * If the client's domain is legacy architecture (CDI_AUTO or ERMX_AUTO)
+                            - The legacy architecture will send the documents to CDI_AUTO to be processed.
+                            - If the document fails inside the AUTO queue, the documents will be sent to the MAN queue.
+                            - If successful, the document is sent to CEROTG. 
                     - Go to the report types, right-click on the report type you've been working on and go to upload. 
                         * You will see the queue that these documents were sent to.
                         * The first screenshot that opened up shows this setting. 
@@ -272,6 +291,9 @@ def ui3():
             elif user_input3 == 2:
                 ui3_1()
                 break
+            elif user_input3 == 3:
+                print()
+                break
             else:
                 print("That was not one of the options, try again!")
             break
@@ -281,15 +303,98 @@ def ui3():
 
 def ui3_1():
     while True:
+        ui5_pic1.show()
         user_input3_1 = input("""
-            Go to ermx server and open AXRM (ApplicationXtenderReportsMgmtAdmin) and go to Report Processors -> local computer -> configuration -> report sources
-            Do you see the directory in question inside AXRM? y/n or e to exit.
+            On the ermx server and open AXRM (ApplicationXtenderReportsMgmtAdmin) 
+                - Go to Report Processors -> local computer -> logs -> failed logs or select the report type log you are 
+                  investigation. 
+                - The screenshot that opened up shows what to look for. 
+                    - The report log and the failed files inside. 
+                
+            Do you see the error logs for the documents that failed? y/n or e to exit.
             """)
         if user_input3_1 == 'y':
-            ui4()
+            print("""
+            In the report logs, open one of the failed logs to see the error.
+                - The screenshot that opened up shows an example.
+                - The error in the screenshot:
+                    * ERROR	12/7/2022 16:55:20	INDEXING Validation error. Page 1: Invalid field value. 
+                      Field: DATE_OF_SERVICE -- 15/47/
+                    * This error means that the file name format doesn't match the way the script is reading the 
+                      filename. You will need to go look at the script and see what is wrong with the filename format.
+                
+            DragonDrop article:
+            https://dragondrop.cerner.com/1351526-cold-feed-failing-due-to-error-with-dos-but-dont-see-what-the-problem-is
+            
+            Other possible error messages:
+                - ERROR 8/2/2006 12:56:57 STORAGE This AX application is currently being modified by another user.
+                    - https://dragondrop.cerner.com/98825-millennium-cerner-document-imaging-armx-not-processing-reports
+                    - https://jira2.cerner.com/browse/DOCIMAGING-11231
+                - ERROR5/18/2017 07:24:11INDEXINGNo index records created. Report processing failed
+                    - https://dragondrop.cerner.com/339628-millennium-cerner-document-imaging-file-fails-to-process-in-cold-feed
+                - ERROR 10/7/2019 12:49:40 UPLOAD Can't create PDF file. This operation is not permitted.
+                    - https://dragondrop.cerner.com/1235754-axrm-cold-feed-unable-to-process-pdfs-with-security
+                - ERROR	5/25/2022 09:45:28	INDEXING	Validation error. Page 1: Invalid field value. 
+                  Field: TRACKING_NBR -- 10277729_10710963_20220517180201960_F_IRFPAI_F_IRFPAI
+                    - The filename was being entered for the tracking number, 
+                      but the filename was too big for the field, causing the documents to fail.
+                    - We changed the tracking number variable from the filename to the MRN + Encounter, 
+                      and it processed through successfully.
+                - ERROR	3/29/2022 13:55:27	INDEXING	Incorrect application fields
+                    - SR 442650237
+                        - The 'BREEZE' report type was set to PFT_AUTO instead of CDI_ERMX, 
+                          causing the data fields not to match up.
+                        - I changed the upload database from PFT_AUTO to CDI_ERMX, updated the data fields, 
+                          and documents started to process correctly
+                """)
+            ui5_pic2.show()
             break
         elif user_input3_1 == 'n':
-            ui2()
+            print("""
+            AXRM removes the logs from the application after a few days, but leaves the logs in the 
+            C:-ERMXData-RPWorking directory. 
+                - The RPWorking directory could be confusing so instead I recreate the issue.
+                
+            To recreate the issue,
+                - Go to the fileshare directory.
+                - Select a file with the .FAILEDPDF
+                - Rename the document to it's original filename
+                    * The usual steps for this goes as followed:
+                        - Change the .FAILEDPDF extension to .PDF
+                        - Remove the unique identifier that AXRM places at the beginning of the filename
+                            * [xxxx_]original_file_name.[FAILED]PDF
+                            * Remove everything between the []
+                - Once the file has been renamed, AXRM will reprocess the document and produce the logs you need.
+                - Once the file fails again, go to the logs and look for the error message.
+            
+            Other possible error messages:
+                - ERROR 8/2/2006 12:56:57 STORAGE This AX application is currently being modified by another user.
+                    - https://dragondrop.cerner.com/98825-millennium-cerner-document-imaging-armx-not-processing-reports
+                    - https://jira2.cerner.com/browse/DOCIMAGING-11231
+                - ERROR5/18/2017 07:24:11INDEXINGNo index records created. Report processing failed
+                    - https://dragondrop.cerner.com/339628-millennium-cerner-document-imaging-file-fails-to-process-in-cold-feed
+                - ERROR 10/7/2019 12:49:40 UPLOAD Can't create PDF file. This operation is not permitted.
+                    - https://dragondrop.cerner.com/1235754-axrm-cold-feed-unable-to-process-pdfs-with-security
+                - ERROR	5/25/2022 09:45:28	INDEXING	Validation error. Page 1: Invalid field value. 
+                  Field: TRACKING_NBR -- 10277729_10710963_20220517180201960_F_IRFPAI_F_IRFPAI
+                    - The filename was being entered for the tracking number, 
+                      but the filename was too big for the field, causing the documents to fail.
+                    - We changed the tracking number variable from the filename to the MRN + Encounter, 
+                      and it processed through successfully.
+                - ERROR	3/29/2022 13:55:27	INDEXING	Incorrect application fields
+                    - SR 442650237
+                        - The 'BREEZE' report type was set to PFT_AUTO instead of CDI_ERMX, 
+                          causing the data fields not to match up.
+                        - I changed the upload database from PFT_AUTO to CDI_ERMX, updated the data fields, 
+                          and documents started to process correctly
+                - ERROR	12/7/2022 16:55:20	INDEXING Validation error. Page 1: Invalid field value. 
+                      Field: DATE_OF_SERVICE -- 15/47/
+                    * This error means that the file name format doesn't match the way the script is reading the 
+                      filename. You will need to go look at the script and see what is wrong with the filename format.
+            
+            DragonDrop article:
+            https://dragondrop.cerner.com/1351526-cold-feed-failing-due-to-error-with-dos-but-dont-see-what-the-problem-is
+            """)
             break
         elif user_input3_1 == 'e':
             print("You are not exiting the program")
@@ -304,14 +409,16 @@ def ui4():
             user_input4 = int(input("""
             What is the issue the client is experience? 
             Select the number that applies:
-                1 - Documents not making it into Millennium/Documents not in patient's chart.
+                1 - Documents not making it into Millennium/failing in AXRM/Missing documents.
                 2 - Cold feed documents failing to cer_batchindex.
                 3 - Duplicate cold feed documents in Millennium.
+                4 - Other
                 0 - to exit
             """))
             if user_input4 == 1:
                 print("""
-                If the document never made it to Millennium, start at the beginning of the process mentioned earlier.
+                If the document never made it to Millennium, failed inside AXRM, or missing from the patient's chart, 
+                start at the beginning of the process mentioned earlier.
                     - Go to the file directory that the files were sent to.
                 """)
                 ui3()
@@ -377,37 +484,7 @@ def ui5():
     while True:
         user_input5 = input("Do you see the files ending with .failedpdf? y/n or e for exit.")
         if user_input5 == 'y':
-            print("""
-            The AXRM files failed.
-            Find out why the docuemtns failed.
-            Go to the report logs and select report type that is failing
-            """)
-            ui5_pic1.show()
             print("In the report logs, open one of the failed logs to see the error")
-            ui5_pic2.show()
-            print("""
-            The error in the screenshot above:
-                - ERROR	12/7/2022 16:55:20	INDEXING Validation error. Page 1: Invalid field value. Field: DATE_OF_SERVICE -- 15/47/
-                - This error means that the file name format doesn't match the way the script is reading the filename. You will need to go look at the script and see what is wrong with the filename format.
-                - https://dragondrop.cerner.com/1351526-cold-feed-failing-due-to-error-with-dos-but-dont-see-what-the-problem-is
-            """)
-            print("""
-            Other possible error messages:
-                - ERROR 8/2/2006 12:56:57 STORAGE This AX application is currently being modified by another user.
-                    - https://dragondrop.cerner.com/98825-millennium-cerner-document-imaging-armx-not-processing-reports
-                    - https://jira2.cerner.com/browse/DOCIMAGING-11231
-                - ERROR5/18/2017 07:24:11INDEXINGNo index records created. Report processing failed
-                    - https://dragondrop.cerner.com/339628-millennium-cerner-document-imaging-file-fails-to-process-in-cold-feed
-                - ERROR 10/7/2019 12:49:40 UPLOAD Can't create PDF file. This operation is not permitted.
-                    - https://dragondrop.cerner.com/1235754-axrm-cold-feed-unable-to-process-pdfs-with-security
-                - ERROR	5/25/2022 09:45:28	INDEXING	Validation error. Page 1: Invalid field value. Field: TRACKING_NBR -- 10277729_10710963_20220517180201960_F_IRFPAI_F_IRFPAI
-                    - The filename was being entered for the tracking number, but the filename was too big for the field, causing the documents to fail.
-                    - We changed the tracking number variable from the filename to the MRN + Encounter, and it processed through successfully.
-                - ERROR	3/29/2022 13:55:27	INDEXING	Incorrect application fields
-                    - SR 442650237
-                        - The 'BREEZE' report type was set to PFT_AUTO instead of CDI_ERMX, causing the data fields not to match up.
-                        - I changed the upload database from PFT_AUTO to CDI_ERMX, updated the data fields, and documents started to process correctly
-            """)
             break
         elif user_input5 == 'n':
             print()
@@ -424,11 +501,18 @@ def ui7():
         user_input7 = input("Do you see the documents inside the AUTO queue? y/n or e for exit.")
         if user_input7 == 'y':
             print("""
-            If the documents aren't processing through the AUTO queue, there are a couple things to check. 
-                1. The batch indexing service pointing to this AUTO queue isn't on, causing the documents not to process
+            If the documents aren't processing through, or stuck in the AUTO queue, there are a few things to check. 
+                * Note: 
+                    - If you see documents in the auto queue, this is a legacy architecture. 
+                    - The problem with these documents not processing is more than likely due to the
+                      batch indexing service. 
+                        * This helps narrow the investigation to a single service that could be causing the 
+                          issues.
+                      
+                1. The batch indexing service pointing to this AUTO queue isn't on.
                     - Go look for the batch indexing service pointing to this queue.
                     - You can find the batch indexing services two ways.
-                        i. Look through the servers they might be on, which are the:
+                        i. Look through the servers they might be running on, which are the:
                             -ACIS server
                             -Document imaging (batch) server
                         ii. Go to discernvisualdeveloper on a Citrix server and run this script.
@@ -445,11 +529,12 @@ def ui7():
                             FROM APPLICATION_CONTEXT A
                             WHERE A.APPLICATION_NUMBER = 4273000
                             WITH NOCOUNTER, SEPARATOR=" ", FORMAT, MAXREC = 100
+                                * This script will show you which server the batch indexing service is running on.
                     
-                    - Log into the server batch indexing is on and make sure the service is on. 
+                    - Log into the server batch indexing is on and make sure the service is running. 
                         * Open up the 'services' app.
                             - Look to see if the batch indexing service is turned on and running 
-                              with the cernerasp'\'[<client mnemonic]cpdisvc account.
+                              with the cernerasp-[<client mnemonic]cpdisvc account.
                             - The first screenshot that popped up shows the services running.
                         * Open up CDIConfig
                             - Go to services tab
@@ -460,13 +545,13 @@ def ui7():
                                 * You can look at each of the indexing services' setting by hitting the dropdown and 
                                   going through each service.
                     
-                    - If the service is on and pointing to the correct AUTO queue, make sure the cpdisvc account has 
-                      the access it needs to process the documents.
-                        * Go to HNAUser
-                        * Search for the cpdisvc account
-                        * Go to organizations and make sure the account has access to the correct facility. 
+                2. If the service is on and pointing to the correct AUTO queue, make sure the cpdisvc account has 
+                   the access it needs to process the documents.
+                    * Go to HNAUser
+                    * Search for the cpdisvc account
+                    * Go to organizations and make sure the account has access to the correct facility. 
                         
-                2. There are a couple of defects with the old legacy architecture.
+                3. There are a couple of defects with the old legacy architecture.
                     i. AXRM or AX Release script is still writing a document to a CDI_AUTO application, 
                        Batch Index service may find the document, successfully index it and copy it to CEROTG, 
                        and create the Millennium references to it. But then the delete from the auto queue will fail 
@@ -485,27 +570,32 @@ def ui7():
         elif user_input7 == 'n':
             print("""
             - This can mean two things. 
-                1. The documents were processed by the batch indexing service. (legacy architecture)
-                2. The documents could be in CEROTG (single app architecture)
+                1. The documents were processed by the batch indexing service and are now in the MAN queue.
+                    - Legacy architecture
+                2. The documents could be in CEROTG 
+                    - Single app architecture
                 
-            - To determine what happened,
+            - To determine which architecture the domain is set up as,
                 - In Document manager, run a blank query against the man queue to see if there are any documents inside.
                     * If there are documents in the MAN queue, batch indexing failed the document and it should be in 
                       cer_batchindex.
                     * If the document are not in the MAN queue, we need to check the pending document table to be sure.
                         - (get script to search pending document queue)
                         - If the documents are on the pending document table, then the documents still need to be 
-                          processed. 
-                    * If the documents are not on the pending document table, the documents were processed successfully.
+                          processed in the AUTO queue. 
+                            - Single App architecture 
+                    * If the documents are not on the pending document table or in the MAN queue, 
+                      the documents were processed successfully.
                         - Check the trans log for the missing documents. 
-                        - If you see that it was processed to the patient's chart: 
-                            * Grab the encounter number (if there)
+                        - If you see that it was processed to the patient's chart (usually you can tell because it will
+                          have a action type flag of 0 or submitted): 
+                            * Grab the encounter number (if there on the trans log record for this image)
                             * If the encounter number is not there, 
                                 - Grab the person_id and search the person table to find the encounter info.
-                                - Select *
-                                  from person p
-                                  where p.person_id = '[person_id]'
-                                  with uar_code(m,d)
+                                    - Select *
+                                      from person p
+                                      where p.person_id = '[person_id]'
+                                      with uar_code(m,d)
                             * Once you have the encounter number, you should be able to go to the encounter in 
                               PowerChart and look for the document.
             """)
