@@ -9,9 +9,9 @@ from PIL import Image
 # root.eval('tk::PlaceWindow . center')
 
 # read in image
-ui1_pic1 = Image.open("Pictures/ui1_pic1.png")
-ui5_pic1 = Image.open('Pictures/ui5_pic1.png')
-ui5_pic2 = Image.open('Pictures/ui5_pic2.png')
+ui1_pic1 = Image.open("Pictures/batchprep_advanced_settings.png")
+ui5_pic1 = Image.open('Pictures/axrm_reporttype_logs.png')
+ui5_pic2 = Image.open('Pictures/axrm_failedpdf_error.png')
 ui6_pic1 = Image.open('Pictures/ui6_pic1.png')
 ui6_pic2 = Image.open('Pictures/ui6_pic2.png')
 ui7_pic1 = Image.open('Pictures/ui7_pic1.png')
