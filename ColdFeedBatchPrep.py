@@ -1,18 +1,18 @@
 # import libraries
 from PIL import Image
 
-# read in image
-batchprep_advanced_settings = Image.open("Pictures/batchprep_advanced_settings.png")
-axrm_reporttype_logs = Image.open('Pictures/axrm_reporttype_logs.png')
-axrm_failedpdf_error = Image.open('Pictures/axrm_failedpdf_error.png')
-ui6_pic1 = Image.open('Pictures/ui6_pic1.png')
-ui6_pic2 = Image.open('Pictures/ui6_pic2.png')
-ui7_pic1 = Image.open('Pictures/ui7_pic1.png')
-ui7_pic2 = Image.open('Pictures/ui7_pic2.png')
-ui7_pic3 = Image.open('Pictures/ui7_pic3.png')
-ui8_pic1 = Image.open('Pictures/ui8_pic1.png')
-ui8_pic2 = Image.open('Pictures/ui8_pic2.png')
-report_type_delete_files_setting = Image.open('Pictures/report_type_delete_files_setting.png')
+# read in h_image
+batchprep_advanced_settings = Image.open("Pictures\\batchprep_advanced_settings.png")
+axrm_reporttype_logs = Image.open('Pictures\\axrm_reporttype_logs.png')
+axrm_failedpdf_error = Image.open('Pictures\\axrm_failedpdf_error.png')
+ui6_pic1 = Image.open('Pictures\\ui6_pic1.png')
+ui6_pic2 = Image.open('Pictures\\ui6_pic2.png')
+ui7_pic1 = Image.open('Pictures\\ui7_pic1.png')
+ui7_pic2 = Image.open('Pictures\\ui7_pic2.png')
+ui7_pic3 = Image.open('Pictures\\ui7_pic3.png')
+ui8_pic1 = Image.open('Pictures/CdiConfig_EventValidation.png')
+ui8_pic2 = Image.open('Pictures/CdiConfig_Versioning.png')
+report_type_delete_files_setting = Image.open('Pictures\\report_type_delete_files_setting.png')
 
 
 def axrm_batchprep_main_issues():
@@ -102,7 +102,7 @@ def axrm_batchprep_main_issues():
                             - Check the trans log for the missing documents. 
                             - If you see that it was processed to the patient's chart (usually you can tell on the trans log
                               table because it will have an action type flag of 0 (submitted) or 5 (document capture)): 
-                                * Get the patient's name from the trans log table and go search PowerChart for the image. 
+                                * Get the patient's name from the trans log table and go search PowerChart for the h_image. 
                                 * If the person's name is not there, 
                                     - Grab the person_id and search the person table to find the encounter info.
                                         - Select *
@@ -239,7 +239,7 @@ def r_files_in_dir():
                         * There is more information regarding the advanced settings for batch prep below.  
                     - Once batch prep processes the document, it will send the file to the patient's chart in Millennium
                 
-                The image that popped open is a screenshot of the advanced settings for batch prep.
+                The h_image that popped open is a screenshot of the advanced settings for batch prep.
                     - I highlighted the important parts.
                         Yellow highlight:
                           - This is the file directory where Batch Prep is pointed to.
@@ -272,8 +272,8 @@ def r_files_in_dir():
                         * The upload app is listed in the report type properties setting. 
                         * The upload app will usually be ermx_auto or cdi_auto
                     - When the documents land in the auto queue, the batch indexing service will process the documents.
-                        * If successful, the image is attached to the patient's chart. 
-                            - To verify, you can go to the patient's chart in PowerChart and look for the image.
+                        * If successful, the h_image is attached to the patient's chart. 
+                            - To verify, you can go to the patient's chart in PowerChart and look for the h_image.
                             - Or, you can search for the batch using the trans log or pending document table.
                         * If the document failed, there was an issue attaching the document to the patient's chart.
                             - This could be due to MRN or FIN don't match a patient, the date of service is not in the 
@@ -916,7 +916,7 @@ def auto_man_queues():
                             - Check the trans log for the missing documents. 
                             - If you see that it was processed to the patient's chart (usually you can tell on the trans log
                               table because it will have an action type flag of 0 (submitted) or 5 (document capture)): 
-                                * Get the patient's name from the trans log table and go search PowerChart for the image. 
+                                * Get the patient's name from the trans log table and go search PowerChart for the h_image. 
                                 * If the person's name is not there, 
                                     - Grab the person_id and search the person table to find the encounter info.
                                         - Select *
@@ -983,7 +983,7 @@ def auto_man_queues():
                             - check to see if the transaction logging is turned on in CDIConfig -> options tab.
                     - Go check PowerChart to see if you can find the document.
                         - The document could be uploaded to a different day than it was processed 
-                            - It can seem like the image isn't on the chart, 
+                            - It can seem like the h_image isn't on the chart, 
                               but it is there, just not where the user was looking.
                 """)
                 break
